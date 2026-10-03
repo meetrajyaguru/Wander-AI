@@ -3522,7 +3522,7 @@
         // FIREBASE CONFIGURATION (Real Version)
         // ===========================================
         const firebaseConfig = {
-            apiKey: "AIzaSyAzAsuOqiLEStBlDqWp3cv2XvY45MsAMAw",
+            apiKey: __FIREBASE_API_KEY_JSON__,
             authDomain: "trip-planner-7f25e.firebaseapp.com",
             projectId: "trip-planner-7f25e",
             storageBucket: "trip-planner-7f25e.firebasestorage.app",
@@ -5468,10 +5468,16 @@ Please recommend 4-5 places to visit in ${dest} with:
         // ===========================================
         // FORMAT AI RESPONSE - NUMBERED ORANGE BORDER CARDS
         // ===========================================
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[character]);
+        }
+
         function formatAIResponse(text, tripContext) {
             if (!text) return '<div class="ai-response">No response</div>';
 
-            let formatted = text;
+            let formatted = String(text);
 
             // Remove any existing tour sections
             formatted = formatted.replace(/🔍\s*\*\*Find Local Tours[\s\S]*?(?=\n\n|\n|$)/gi, '');
@@ -5502,7 +5508,7 @@ Please recommend 4-5 places to visit in ${dest} with:
                                 <div class="place-number">${currentPlaceNum}</div>
                                 <div class="place-content">
                                     <div class="place-header">
-                                        <h4 class="place-title">${currentPlaceName}</h4>
+                                        <h4 class="place-title">${escapeHTML(currentPlaceName)}</h4>
                                     </div>
                                     <div class="place-details">
                                         ${formatDetails(currentDetails.join('\n'))}
@@ -5530,7 +5536,7 @@ Please recommend 4-5 places to visit in ${dest} with:
                 else if (tipsSection && line.match(/^- /) && !line.match(/🔍/)) {
                     // Add tip
                     const tipText = line.replace(/^- /, '').replace(/\*/g, '');
-                    tipsSection += `<div class="tip-item">✨ ${tipText}</div>`;
+                    tipsSection += `<div class="tip-item">✨ ${escapeHTML(tipText)}</div>`;
                 }
                 else if (line.match(/🔍\s*\*\*Book with Local Experts\*\*/) || line.match(/🔍 Book with Local Experts/)) {
                     // Start travel agents section
@@ -5545,7 +5551,14 @@ Please recommend 4-5 places to visit in ${dest} with:
                     // Add link
                     const urlMatch = line.match(/(https?:\/\/[^\s]+)/);
                     if (urlMatch) {
-                        travelAgentsSection += `<a href="${urlMatch[1]}" target="_blank" class="consultant-link">🔗 ${urlMatch[1].replace(/https?:\/\//, '')}</a>`;
+                        try {
+                            const safeUrl = new URL(urlMatch[1]);
+                            if (safeUrl.protocol === 'https:' && ['www.google.com', 'maps.google.com'].includes(safeUrl.hostname)) {
+                                travelAgentsSection += `<a href="${escapeHTML(safeUrl.href)}" target="_blank" rel="noopener noreferrer" class="consultant-link">🔗 ${escapeHTML(safeUrl.host + safeUrl.pathname)}</a>`;
+                            }
+                        } catch (error) {
+                            // Ignore malformed URLs from model output.
+                        }
                     }
                 }
                 else if (line.match(/^---/) && travelAgentsSection) {
@@ -5600,7 +5613,7 @@ Please recommend 4-5 places to visit in ${dest} with:
             // Add the CHECK IT OUT button (only one)
             const checkItOutButton = `
                 <div class="tour-button-section">
-                    <div class="tour-header">🔍 Find Local Tours & Travels in ${destination}</div>
+                    <div class="tour-header">🔍 Find Local Tours & Travels in ${escapeHTML(destination)}</div>
                     <a href="https://www.google.com/maps/search/tour+operators+${destEncoded}" target="_blank" class="consultant-link main-tour-btn">
                         📍 Check it out
                     </a>
@@ -5614,7 +5627,7 @@ Please recommend 4-5 places to visit in ${dest} with:
 
         // Helper function to format details
         function formatDetails(details) {
-            let formatted = details;
+            let formatted = escapeHTML(details);
 
             // Format entry cost
             formatted = formatted.replace(/Entry:?\s*(.*?)(?=\n|$)/gi, '<div class="detail-item"><span class="detail-icon">💰</span> <strong>Entry:</strong> $1</div>');

@@ -1,3 +1,15 @@
 node_modules/
 .env
-firebase-service-account.json
+.env.*
+!.env.example
+firebase-service-account*.json
+*-service-account*.json
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+server_log.txt
+coverage/
+dist/

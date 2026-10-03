@@ -1,19 +1,35 @@
 require('dotenv').config();
 const express = require('express');
+const helmet = require('helmet');
+const { rateLimit } = require('express-rate-limit');
 const mongoose = require('mongoose');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const flash = require('connect-flash');
 const path = require('path');
 
 const app = express();
+const requiredEnvironment = ['MONGODB_URI', 'SESSION_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
+const missingEnvironment = requiredEnvironment.filter(name => !process.env[name]);
+if (missingEnvironment.length) {
+  throw new Error(`Missing required environment variables: ${missingEnvironment.join(', ')}`);
+}
+if (process.env.SESSION_SECRET.length < 32) {
+  throw new Error('SESSION_SECRET must contain at least 32 characters.');
+}
+
+app.disable('x-powered-by');
+app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+app.use(express.json({ limit: '32kb' }));
+app.use(express.urlencoded({ extended: true, limit: '16kb' }));
+app.use('/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false }));
+app.use('/generate-trip', rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false }));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/trip-planner', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('MongoDB Connected'))
+mongoose.connect(process.env.MONGODB_URI).then(() => console.log('MongoDB Connected'))
   .catch(err => console.log('MongoDB Connection Error:', err.message));
 
 // User Schema
@@ -35,17 +51,26 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
+app.use(express.static('public', { dotfiles: 'deny', index: false }));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Session Configuration
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    collectionName: 'sessions',
+    ttl: 12 * 60 * 60
+  }),
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 12 * 60 * 60 * 1000
+  }
 }));
 
 // Passport Configuration
@@ -125,9 +150,9 @@ app.get('/auth/google/callback',
   }
 );
 
-app.get('/logout', (req, res) => {
+app.post('/logout', (req, res) => {
   req.logout((err) => {
-    if (err) { return next(err); }
+    if (err) return res.status(500).send('Unable to log out.');
     res.redirect('/');
   });
 });

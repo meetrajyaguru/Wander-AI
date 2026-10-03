@@ -1,60 +1,66 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
-const cors = require('cors');
+const fs = require('fs');
+const helmet = require('helmet');
+const { rateLimit } = require('express-rate-limit');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3005;
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
+app.disable('x-powered-by');
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
+app.use(express.json({ limit: '32kb' }));
+
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many requests. Please try again later.' }
+});
+const chatLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { success: false, error: 'Chat limit reached. Please try again later.' }
+});
+app.use('/api', apiLimiter);
+app.use('/api/chat', chatLimiter);
+
+app.get(['/', '/index.html'], (req, res, next) => {
+    fs.readFile(path.join(__dirname, 'public', 'index.html'), 'utf8', (error, html) => {
+        if (error) return next(error);
+        if (!process.env.FIREBASE_API_KEY) {
+            return res.status(503).send('Firebase is not configured. Set FIREBASE_API_KEY in the server environment.');
+        }
+
+        const placeholder = '__FIREBASE_API_KEY_JSON__';
+        if (!html.includes(placeholder)) return next(new Error('Firebase configuration placeholder is missing.'));
+
+        res.set('Cache-Control', 'no-store');
+        res.type('html').send(html.replace(placeholder, JSON.stringify(process.env.FIREBASE_API_KEY)));
+    });
+});
+
+app.use(express.static(path.join(__dirname, 'public'), {
+    dotfiles: 'deny',
+    index: false,
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0
+}));
 
 console.log("🚀 Server starting...");
 
 // API KEYS
-const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.PIYI_KEY;
-const GROQ_API_KEY_SOURCE = process.env.GROQ_API_KEY ? 'GROQ_API_KEY' : process.env.PIYI_KEY ? 'PIYI_KEY' : null;
-console.log("🔑 Groq API Key:", GROQ_API_KEY ? `✅ Loaded from ${GROQ_API_KEY_SOURCE}` : "❌ Missing");
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+console.log('Groq API key:', GROQ_API_KEY ? 'configured' : 'not configured');
 
-// TEST ENDPOINTS
-app.get('/test', (req, res) => {
-    res.send('<h1 style="color:green;">✅ Server is running!</h1>');
-});
-
-// Test Groq API Connection
-app.get('/test-groq', async (req, res) => {
-    try {
-        if (!GROQ_API_KEY) {
-            return res.send('<h1 style="color:red;">❌ GROQ API key not found in .env (set GROQ_API_KEY or PIYI_KEY)</h1>');
-        }
-        
-        const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-            model: "llama-3.3-70b-versatile",
-            messages: [{ role: "user", content: "Say 'Groq API is working!'" }],
-            max_tokens: 50
-        }, {
-            headers: {
-                "Authorization": `Bearer ${GROQ_API_KEY}`,
-                "Content-Type": "application/json"
-            }
-        });
-        
-        res.send(`
-            <h1 style="color:green;">✅ Groq API is WORKING!</h1>
-            <p>Response: ${response.data.choices[0].message.content}</p>
-            <p>Your Groq API key is valid.</p>
-        `);
-    } catch (error) {
-        res.send(`
-            <h1 style="color:red;">❌ Groq API Error</h1>
-            <p>Error: ${error.message}</p>
-            <p>Status: ${error.response?.status || 'Unknown'}</p>
-            <p>Response: ${JSON.stringify(error.response?.data || 'No data')}</p>
-        `);
-    }
-});
+app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
 // ===========================================
 // COMPREHENSIVE DESTINATION DATABASE
@@ -951,23 +957,45 @@ async function getDestinationPhotos(destination) {
     return photos.slice(0, 2);
 }
 
+function isValidPlace(value) {
+    return typeof value === 'string' &&
+        value.trim().length > 0 &&
+        value.trim().length <= 100 &&
+        /^[\p{L}\p{M}0-9 .,'’()&/-]+$/u.test(value.trim());
+}
+
+function isValidDate(value) {
+    if (value === '' || value === undefined || value === null) return true;
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 // ===========================================
 // CHAT ENDPOINT - WORKING VERSION
 // ===========================================
 app.post('/api/chat', async (req, res) => {
+    let safeDestination = 'Paris';
     try {
-        const { message, chatHistory = [], tripContext = {} } = req.body;
-        
-        console.log("📝 Chat message received:", message);
+        const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+        const message = typeof body.message === 'string' ? body.message.trim() : '';
+        if (!message || message.length > 4000) {
+            return res.status(400).json({ success: false, error: 'Message must be between 1 and 4000 characters.' });
+        }
+
+        const tripContext = body.tripContext && typeof body.tripContext === 'object' && !Array.isArray(body.tripContext)
+            ? body.tripContext
+            : {};
+        safeDestination = isValidPlace(tripContext.destination) ? tripContext.destination.trim() : 'Paris';
+        const peopleValue = Number(tripContext.people);
+        const budgetValue = Number(tripContext.budget);
+        const people = Number.isInteger(peopleValue) && peopleValue >= 1 && peopleValue <= 20 ? peopleValue : 2;
+        const budget = Number.isFinite(budgetValue) && budgetValue >= 0 && budgetValue <= 100000 ? budgetValue : 2000;
         
         if (!GROQ_API_KEY) {
-            console.error("❌ GROQ API key not found");
-            return sendWorkingFallback(req, res);
+            return sendWorkingFallback(res, safeDestination);
         }
-        
-        const destination = tripContext.destination || "";
-        const people = tripContext.people || 2;
-        const budget = tripContext.budget || 2000;
+        const destination = safeDestination;
         
         // Simple, direct prompt
         let userPrompt = `Recommend 5 places to visit in ${destination || "Paris"} for ${people} people with a budget of $${budget}. 
@@ -996,8 +1024,6 @@ Also add:
             { role: "user", content: userPrompt }
         ];
         
-        console.log("🤖 Calling Groq API...");
-        
         // Call Groq API
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
             model: "llama-3.3-70b-versatile",
@@ -1013,8 +1039,6 @@ Also add:
         });
         
         let aiResponse = response.data.choices[0].message.content;
-        console.log("✅ Groq response received, length:", aiResponse.length);
-        
         // Add the tour link at the end if not present
         if (destination && !aiResponse.includes('Check it out')) {
             const destEncoded = encodeURIComponent(destination);
@@ -1024,19 +1048,15 @@ Also add:
         res.json({ success: true, message: aiResponse });
         
     } catch (error) {
-        console.error("❌ Chat error:", error.message);
-        console.error("Error details:", error.response?.data || error);
-        
-        // Send fallback response with REAL places
-        sendWorkingFallback(req, res);
+        console.error('Chat request failed:', error.message);
+        sendWorkingFallback(res, safeDestination);
     }
 });
 
 // ===========================================
 // FALLBACK FUNCTION - WORKING
 // ===========================================
-function sendWorkingFallback(req, res) {
-    const destination = (req.body.tripContext && req.body.tripContext.destination) ? req.body.tripContext.destination : "Paris";
+function sendWorkingFallback(res, destination = 'Paris') {
     const destLower = destination.toLowerCase();
     
     let response = "";
@@ -1268,7 +1288,21 @@ function sendWorkingFallback(req, res) {
 // ===========================================
 app.post('/api/plan-trip', async (req, res) => {
     try {
-        const { destination, origin, startDate, endDate, budget, people } = req.body;
+        const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+        const { destination, origin, startDate, endDate } = body;
+        const budget = Number(body.budget);
+        const people = Number(body.people);
+        if (!isValidPlace(destination) || !isValidPlace(origin)) {
+            return res.status(400).json({ success: false, error: 'Enter a valid origin and destination.' });
+        }
+        if (!Number.isFinite(budget) || budget < 100 || budget > 100000 ||
+            !Number.isInteger(people) || people < 1 || people > 20) {
+            return res.status(400).json({ success: false, error: 'Budget or traveler count is outside the allowed range.' });
+        }
+        if (!isValidDate(startDate) || !isValidDate(endDate) ||
+            (startDate && endDate && endDate < startDate)) {
+            return res.status(400).json({ success: false, error: 'Enter valid trip dates.' });
+        }
         
         // Get photos for the destination
         const photos = await getDestinationPhotos(destination);
@@ -1315,8 +1349,8 @@ app.post('/api/plan-trip', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error("Plan trip error:", error);
-        res.json({ success: false, error: error.message });
+        console.error('Plan trip request failed:', error.message);
+        res.status(500).json({ success: false, error: 'Unable to plan this trip right now.' });
     }
 });
 
@@ -1355,18 +1389,14 @@ app.post('/api/random-trip', async (req, res) => {
 });
 
 // ===========================================
-// SERVE FRONTEND
-// ===========================================
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// ===========================================
 // START SERVER
 // ===========================================
+app.use((error, req, res, next) => {
+    if (res.headersSent) return next(error);
+    const status = error.status === 413 ? 413 : 500;
+    res.status(status).json({ success: false, error: status === 413 ? 'Request body is too large.' : 'Internal server error.' });
+});
+
 app.listen(PORT, () => {
-    console.log(`\n✅ Server running on http://localhost:${PORT}`);
-    console.log(`🔧 Test: http://localhost:${PORT}/test`);
-    console.log(`🔧 Test Groq: http://localhost:${PORT}/test-groq`);
-    console.log(`💬 Chat: POST /api/chat`);
+    console.log(`Server running on port ${PORT}`);
 });

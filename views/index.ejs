@@ -14,7 +14,7 @@
                 <% if (user) { %>
                     <span>Welcome, <%= user.name %>!</span>
                     <a href="/dashboard" class="btn-outline">Dashboard</a>
-                    <a href="/logout" class="btn-outline">Logout</a>
+                    <form action="/logout" method="post" style="display:inline;"><button type="submit" class="btn-outline">Logout</button></form>
                 <% } else { %>
                     <a href="/login" class="btn-outline">Login</a>
                     <a href="/register" class="btn-primary">Sign Up</a>

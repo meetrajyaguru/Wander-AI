@@ -2,14 +2,14 @@
 // TEST SERVER - Copy this entire file
 // ===========================================
 
+require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
-const path = require('path');
 
 const app = express();
 const PORT = 3001; // Different port to avoid conflicts
 
-app.use(express.json());
+app.use(express.json({ limit: '8kb' }));
 app.use(express.static('public'));
 
 // ===========================================
@@ -21,6 +21,9 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 // SIMPLE TEST ENDPOINT
 // ===========================================
 app.get('/test', async (req, res) => {
+    if (!OPENAI_API_KEY) {
+        return res.status(503).send('<h1>OPENAI_API_KEY is not configured.</h1>');
+    }
     try {
         const response = await axios.post('https://api.openai.com/v1/chat/completions', {
             model: "gpt-3.5-turbo",
@@ -43,7 +46,7 @@ app.get('/test', async (req, res) => {
             <h1 style="color: red;">❌ FAILED</h1>
             <p>Error: ${error.message}</p>
             <p>Status: ${error.response?.status || 'Unknown'}</p>
-            <p>Details: ${JSON.stringify(error.response?.data || 'No details')}</p>
+            <p>The provider request failed. Check server logs for details.</p>
         `);
     }
 });
@@ -52,9 +55,14 @@ app.get('/test', async (req, res) => {
 // SIMPLE CHAT ENDPOINT
 // ===========================================
 app.post('/chat', async (req, res) => {
+    const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+    if (!OPENAI_API_KEY) {
+        return res.status(503).json({ success: false, message: 'OPENAI_API_KEY is not configured.' });
+    }
+    if (!message || message.length > 2000) {
+        return res.status(400).json({ success: false, message: 'Message must be between 1 and 2000 characters.' });
+    }
     try {
-        const { message } = req.body;
-        
         const response = await axios.post('https://api.openai.com/v1/chat/completions', {
             model: "gpt-3.5-turbo",
             messages: [
@@ -73,10 +81,7 @@ app.post('/chat', async (req, res) => {
             message: response.data.choices[0].message.content 
         });
     } catch (error) {
-        res.json({ 
-            success: true, 
-            message: "I'm here to help! Let me think about that... 🤔" 
-        });
+        res.status(502).json({ success: false, message: 'The provider request failed.' });
     }
 });
 
@@ -116,7 +121,7 @@ app.get('/', (req, res) => {
                         body: JSON.stringify({message: msg})
                     });
                     const data = await res.json();
-                    document.getElementById('response').innerHTML = '<strong>Response:</strong> ' + data.message;
+                    document.getElementById('response').textContent = 'Response: ' + data.message;
                 }
             </script>
         </body>
@@ -124,7 +129,7 @@ app.get('/', (req, res) => {
     `);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '127.0.0.1', () => {
     console.log(`\n🚀 Test server running on http://localhost:${PORT}`);
     console.log(`🔍 First, test your key: http://localhost:${PORT}/test`);
 });

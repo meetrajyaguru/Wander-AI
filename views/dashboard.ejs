@@ -13,7 +13,7 @@
             <div class="nav-links">
                 <span>Welcome, <%= user.name %>!</span>
                 <a href="/my-trips" class="btn-outline">My Trips</a>
-                <a href="/logout" class="btn-outline">Logout</a>
+                <form action="/logout" method="post" style="display:inline;"><button type="submit" class="btn-outline">Logout</button></form>
             </div>
         </nav>
 
