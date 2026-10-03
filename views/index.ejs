@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trip Planner</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="logo">✈️ TripPlanner AI</div>
+            <div class="nav-links">
+                <% if (user) { %>
+                    <span>Welcome, <%= user.name %>!</span>
+                    <a href="/dashboard" class="btn-outline">Dashboard</a>
+                    <a href="/logout" class="btn-outline">Logout</a>
+                <% } else { %>
+                    <a href="/login" class="btn-outline">Login</a>
+                    <a href="/register" class="btn-primary">Sign Up</a>
+                <% } %>
+            </div>
+        </nav>
+
+        <main class="hero">
+            <h1>Plan Your Perfect Trip with AI</h1>
+            <p class="subtitle">Simple, smart, and personalized travel planning</p>
+            
+            <% if (user) { %>
+                <a href="/dashboard" class="btn-large">Start Planning →</a>
+            <% } else { %>
+                <a href="/register" class="btn-large">Get Started Free</a>
+            <% } %>
+        </main>
+
+        <section class="features">
+            <div class="feature-card">
+                <div class="feature-icon">✍️</div>
+                <h3>Simple Input</h3>
+                <p>Just tell us your destination, dates, budget, and group size</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>AI-Powered</h3>
+                <p>Get personalized itineraries generated instantly</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💾</div>
+                <h3>Save & Share</h3>
+                <p>All your trips are saved in your account</p>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

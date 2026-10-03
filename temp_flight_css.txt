@@ -1,0 +1,100 @@
+/* Flight Card Styles */
+.flight-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    border: 1px solid #ffe4d5;
+}
+
+.flight-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #ffe4d5;
+}
+
+.flight-icon {
+    font-size: 1.5rem;
+}
+
+.flight-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ff6b35;
+}
+
+.flight-route-details {
+    text-align: center;
+    margin: 15px 0;
+}
+
+.route {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.route .from, .route .to {
+    font-weight: 700;
+}
+
+.route .arrow {
+    color: #ff6b35;
+    margin: 0 10px;
+}
+
+.airport-codes {
+    font-size: 0.85rem;
+    color: #718096;
+    margin-top: 5px;
+    font-family: monospace;
+}
+
+.flight-price-section {
+    text-align: center;
+    margin: 15px 0;
+}
+
+.flight-price-section .price {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ff6b35;
+}
+
+.flight-price-section .price-note {
+    font-size: 0.7rem;
+    color: #999;
+}
+
+.flight-airline {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #4a5568;
+    margin: 10px 0;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 30px;
+}
+
+.btn-book-flight {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: white;
+    border: none;
+    border-radius: 40px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: all 0.3s;
+}
+
+.btn-book-flight:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255,107,53,0.3);
+}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AI Trip Planner</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="logo">✈️ TripPlanner AI</div>
+            <div class="nav-links">
+                <a href="/" class="btn-outline">Home</a>
+                <a href="/register" class="btn-primary">Sign Up</a>
+            </div>
+        </nav>
+
+        <div class="auth-container">
+            <h2>Welcome Back</h2>
+            
+            <% if (messages.length > 0) { %>
+                <div class="error-message" style="color: red; margin-bottom: 20px;">
+                    <%= messages[0] %>
+                </div>
+            <% } %>
+
+            <a href="/auth/google" class="google-btn">
+                <img src="https://www.google.com/favicon.ico" alt="Google" style="width: 20px; height: 20px;">
+                Continue with Google
+            </a>
+        </div>
+    </div>
+</body>
+</html>

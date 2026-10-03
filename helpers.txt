@@ -1,0 +1,228 @@
+// ===========================================
+// AIRPORT CODE DATABASE
+// ===========================================
+const airportDatabase = {
+    // North America
+    "new york": "JFK",
+    "los angeles": "LAX", 
+    "chicago": "ORD",
+    "miami": "MIA",
+    "san francisco": "SFO",
+    "boston": "BOS",
+    "washington": "IAD",
+    "toronto": "YYZ",
+    
+    // India
+    "mumbai": "BOM",
+    "delhi": "DEL",
+    "bangalore": "BLR",
+    "chennai": "MAA",
+    "kolkata": "CCU",
+    "hyderabad": "HYD",
+    "ahmedabad": "AMD",
+    "pune": "PNQ",
+    "goa": "GOI",
+    
+    // Europe
+    "london": "LHR",
+    "paris": "CDG",
+    "rome": "FCO",
+    "milan": "MXP",
+    "barcelona": "BCN",
+    "madrid": "MAD",
+    "amsterdam": "AMS",
+    "berlin": "BER",
+    "munich": "MUC",
+    "frankfurt": "FRA",
+    "vienna": "VIE",
+    "prague": "PRG",
+    "dublin": "DUB",
+    
+    // Asia
+    "tokyo": "NRT",
+    "osaka": "KIX",
+    "bangkok": "BKK",
+    "phuket": "HKT",
+    "singapore": "SIN",
+    "kuala lumpur": "KUL",
+    "bali": "DPS",
+    "jakarta": "CGK",
+    "ho chi minh": "SGN",
+    "hanoi": "HAN",
+    "manila": "MNL",
+    "seoul": "ICN",
+    
+    // Middle East
+    "dubai": "DXB",
+    "abu dhabi": "AUH",
+    "doha": "DOH",
+    "riyadh": "RUH",
+    
+    // Australia
+    "sydney": "SYD",
+    "melbourne": "MEL",
+    "brisbane": "BNE",
+    "perth": "PER",
+    
+    // Africa
+    "cairo": "CAI",
+    "cape town": "CPT",
+    "johannesburg": "JNB",
+    "nairobi": "NBO"
+};
+
+// ===========================================
+// GET AIRPORT CODE - IMPROVED
+// ===========================================
+function getAirportCode(cityName) {
+    if (!cityName) {
+        console.log("❌ No city name provided");
+        return "JFK"; // Default
+    }
+    
+    const lowerCity = cityName.toLowerCase().trim();
+    console.log(`🔍 Looking up airport code for: "${lowerCity}"`);
+    
+    // Direct match
+    if (airportDatabase[lowerCity]) {
+        console.log(`✅ Found direct match: ${airportDatabase[lowerCity]}`);
+        return airportDatabase[lowerCity];
+    }
+    
+    // Partial match
+    for (let [city, code] of Object.entries(airportDatabase)) {
+        if (lowerCity.includes(city) || city.includes(lowerCity)) {
+            console.log(`✅ Found partial match: ${city} → ${code}`);
+            return code;
+        }
+    }
+    
+    // Popular city aliases
+    const aliases = {
+        "ny": "JFK", "nyc": "JFK", "new york city": "JFK",
+        "la": "LAX", "vegas": "LAS", "las vegas": "LAS",
+        "sf": "SFO", "bay area": "SFO",
+        "dc": "IAD", "washington dc": "IAD",
+        "london city": "LCY", "gatwick": "LGW",
+        "tokyo narita": "NRT", "tokyo haneda": "HND",
+        "bombay": "BOM", "calcutta": "CCU", "madras": "MAA"
+    };
+    
+    if (aliases[lowerCity]) {
+        console.log(`✅ Found alias: ${lowerCity} → ${aliases[lowerCity]}`);
+        return aliases[lowerCity];
+    }
+    
+    console.log(`⚠️ No airport code found for "${cityName}", using default JFK`);
+    return "JFK";
+}
+
+// ===========================================
+// GET FLIGHT PRICE - BASED ON ROUTE
+// ===========================================
+function getFlightPrice(origin, destination) {
+    console.log(`📊 Getting flight price from ${origin} to ${destination}`);
+    
+    const originCode = getAirportCode(origin);
+    const destCode = getAirportCode(destination);
+    
+    console.log(`✈️ Route: ${originCode} → ${destCode}`);
+    
+    // Route-based pricing database
+    const routePrices = {
+        // From New York (JFK)
+        "JFK-CDG": 650, "JFK-LHR": 600, "JFK-NRT": 1200,
+        "JFK-DXB": 900, "JFK-BOM": 850, "JFK-DEL": 800,
+        "JFK-BKK": 950, "JFK-SIN": 1000, "JFK-SYD": 1400,
+        
+        // From Mumbai (BOM)
+        "BOM-CDG": 800, "BOM-LHR": 700, "BOM-DXB": 300,
+        "BOM-BKK": 400, "BOM-SIN": 450, "BOM-JFK": 850,
+        "BOM-LAX": 950, "BOM-SYD": 1100,
+        
+        // From London (LHR)
+        "LHR-CDG": 150, "LHR-JFK": 600, "LHR-DXB": 500,
+        "LHR-BOM": 700, "LHR-BKK": 650, "LHR-SIN": 750,
+        
+        // From Dubai (DXB)
+        "DXB-BOM": 250, "DXB-CDG": 550, "DXB-LHR": 500,
+        "DXB-BKK": 400, "DXB-SIN": 450, "DXB-JFK": 900,
+        
+        // From Singapore (SIN)
+        "SIN-BKK": 150, "SIN-DPS": 200, "SIN-BOM": 400,
+        "SIN-SYD": 550, "SIN-CDG": 800,
+        
+        // From Bangkok (BKK)
+        "BKK-DXB": 400, "BKK-SIN": 150, "BKK-BOM": 350,
+        "BKK-LHR": 650, "BKK-CDG": 700, "BKK-SYD": 600
+    };
+    
+    const routeKey = `${originCode}-${destCode}`;
+    const reverseKey = `${destCode}-${originCode}`;
+    
+    let price = routePrices[routeKey] || routePrices[reverseKey];
+    
+    // Calculate price if not in database
+    if (!price) {
+        console.log(`⚠️ Route not in database, calculating estimate`);
+        // Estimate based on distance
+        const longHaul = ["NRT", "SYD", "HND", "PER", "JFK", "LAX", "SFO"];
+        const mediumHaul = ["DXB", "BKK", "SIN", "KUL", "DPS"];
+        
+        if (longHaul.includes(destCode) || longHaul.includes(originCode)) {
+            price = 1000;
+        } else if (mediumHaul.includes(destCode) || mediumHaul.includes(originCode)) {
+            price = 600;
+        } else {
+            price = 400;
+        }
+    }
+    
+    console.log(`💰 Final price: $${price}`);
+    
+    return price;
+}
+
+// ===========================================
+// GET AIRLINE FOR ROUTE
+// ===========================================
+function getAirlineForRoute(originCode, destCode) {
+    const airlines = {
+        "JFK-CDG": "Air France, Delta",
+        "JFK-LHR": "British Airways, Virgin Atlantic",
+        "JFK-NRT": "Japan Airlines, ANA",
+        "JFK-DXB": "Emirates",
+        "JFK-BOM": "Air India, Emirates",
+        "BOM-CDG": "Air France, Emirates",
+        "BOM-LHR": "British Airways, Virgin Atlantic",
+        "BOM-DXB": "Emirates, IndiGo",
+        "LHR-CDG": "British Airways, Air France",
+        "LHR-JFK": "British Airways, Virgin Atlantic",
+        "DXB-BOM": "Emirates, IndiGo",
+        "SIN-BKK": "Singapore Airlines, Thai Airways",
+        "BKK-DXB": "Emirates, Thai Airways"
+    };
+    
+    const routeKey = `${originCode}-${destCode}`;
+    return airlines[routeKey] || "Multiple airlines available";
+}
+
+// ===========================================
+// BOOK FLIGHT FUNCTION
+// ===========================================
+function bookFlight(origin, destination, startDate, endDate, people) {
+    console.log(`📅 Booking flight from ${origin} to ${destination}`);
+    console.log(`📅 Dates: ${startDate} to ${endDate}, People: ${people}`);
+    
+    const originCode = getAirportCode(origin);
+    const destCode = getAirportCode(destination);
+    
+    console.log(`✈️ Airport codes: ${originCode} → ${destCode}`);
+    
+    // Build Kiwi.com URL
+    const url = `https://www.kiwi.com/en/search/results/${originCode}/${destCode}/${startDate}/${endDate}?adults=${people}`;
+    
+    console.log(`🔗 Opening URL: ${url}`);
+    
+    window.open(url, '_blank');
+}

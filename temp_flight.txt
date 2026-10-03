@@ -1,0 +1,170 @@
+// ===========================================
+// COMPLETE FLIGHT DATABASE
+// ===========================================
+const flightDatabase = {
+    // Route prices (originCode-destCode: price)
+    routes: {
+        // From New York (JFK)
+        "JFK-CDG": { price: 650, airlines: "Air France, Delta, American Airlines" },
+        "JFK-LHR": { price: 600, airlines: "British Airways, Virgin Atlantic, Delta" },
+        "JFK-NRT": { price: 1200, airlines: "Japan Airlines, ANA, United" },
+        "JFK-DXB": { price: 900, airlines: "Emirates, Etihad" },
+        "JFK-BOM": { price: 850, airlines: "Air India, Emirates, Delta" },
+        "JFK-DEL": { price: 800, airlines: "Air India, Emirates" },
+        "JFK-BKK": { price: 950, airlines: "Thai Airways, Emirates" },
+        "JFK-SIN": { price: 1000, airlines: "Singapore Airlines, United" },
+        "JFK-SYD": { price: 1400, airlines: "Qantas, United" },
+        "JFK-AMS": { price: 550, airlines: "KLM, Delta" },
+        "JFK-FCO": { price: 600, airlines: "Delta, Alitalia" },
+        "JFK-BCN": { price: 580, airlines: "Delta, Iberia" },
+        "JFK-DPS": { price: 1100, airlines: "Garuda Indonesia, Emirates" },
+        
+        // From Mumbai (BOM)
+        "BOM-CDG": { price: 800, airlines: "Air France, Emirates, Air India" },
+        "BOM-LHR": { price: 700, airlines: "British Airways, Virgin Atlantic, Air India" },
+        "BOM-DXB": { price: 300, airlines: "Emirates, IndiGo, SpiceJet" },
+        "BOM-BKK": { price: 400, airlines: "Thai Airways, IndiGo, Air India" },
+        "BOM-SIN": { price: 450, airlines: "Singapore Airlines, IndiGo" },
+        "BOM-JFK": { price: 850, airlines: "Air India, Emirates, Delta" },
+        "BOM-LAX": { price: 950, airlines: "Air India, Emirates" },
+        "BOM-SYD": { price: 1100, airlines: "Qantas, Air India, Singapore Airlines" },
+        "BOM-KUL": { price: 380, airlines: "Malaysia Airlines, IndiGo" },
+        "BOM-DPS": { price: 500, airlines: "Garuda Indonesia, IndiGo" },
+        "BOM-HKG": { price: 550, airlines: "Cathay Pacific, IndiGo" },
+        
+        // From London (LHR)
+        "LHR-CDG": { price: 150, airlines: "British Airways, Air France, EasyJet" },
+        "LHR-JFK": { price: 600, airlines: "British Airways, Virgin Atlantic, Delta" },
+        "LHR-DXB": { price: 500, airlines: "Emirates, British Airways" },
+        "LHR-BOM": { price: 700, airlines: "British Airways, Virgin Atlantic, Air India" },
+        "LHR-BKK": { price: 650, airlines: "Thai Airways, British Airways" },
+        "LHR-SIN": { price: 750, airlines: "Singapore Airlines, British Airways" },
+        "LHR-SYD": { price: 1200, airlines: "Qantas, British Airways" },
+        "LHR-AMS": { price: 120, airlines: "KLM, British Airways" },
+        "LHR-FCO": { price: 180, airlines: "British Airways, Alitalia" },
+        "LHR-BCN": { price: 150, airlines: "British Airways, Vueling" },
+        
+        // From Dubai (DXB)
+        "DXB-BOM": { price: 250, airlines: "Emirates, IndiGo, SpiceJet" },
+        "DXB-CDG": { price: 550, airlines: "Emirates, Air France" },
+        "DXB-LHR": { price: 500, airlines: "Emirates, British Airways" },
+        "DXB-BKK": { price: 400, airlines: "Emirates, Thai Airways" },
+        "DXB-SIN": { price: 450, airlines: "Emirates, Singapore Airlines" },
+        "DXB-JFK": { price: 900, airlines: "Emirates" },
+        "DXB-DEL": { price: 280, airlines: "Emirates, IndiGo" },
+        "DXB-MAA": { price: 260, airlines: "Emirates, IndiGo" },
+        
+        // From Singapore (SIN)
+        "SIN-BKK": { price: 150, airlines: "Singapore Airlines, Thai Airways, Scoot" },
+        "SIN-DPS": { price: 200, airlines: "Singapore Airlines, Garuda Indonesia" },
+        "SIN-BOM": { price: 400, airlines: "Singapore Airlines, IndiGo" },
+        "SIN-SYD": { price: 550, airlines: "Singapore Airlines, Qantas" },
+        "SIN-CDG": { price: 800, airlines: "Singapore Airlines, Air France" },
+        "SIN-LHR": { price: 750, airlines: "Singapore Airlines, British Airways" },
+        "SIN-JFK": { price: 1000, airlines: "Singapore Airlines, United" },
+        
+        // From Bangkok (BKK)
+        "BKK-DXB": { price: 400, airlines: "Emirates, Thai Airways" },
+        "BKK-SIN": { price: 150, airlines: "Thai Airways, Singapore Airlines" },
+        "BKK-BOM": { price: 350, airlines: "Thai Airways, IndiGo" },
+        "BKK-LHR": { price: 650, airlines: "Thai Airways, British Airways" },
+        "BKK-CDG": { price: 700, airlines: "Thai Airways, Air France" },
+        "BKK-SYD": { price: 600, airlines: "Thai Airways, Qantas" },
+        "BKK-DPS": { price: 250, airlines: "Thai Airways, Garuda Indonesia" }
+    },
+    
+    // Airport codes
+    airports: {
+        "new york": "JFK", "new york city": "JFK", "nyc": "JFK",
+        "los angeles": "LAX", "la": "LAX",
+        "mumbai": "BOM", "bombay": "BOM",
+        "delhi": "DEL", "new delhi": "DEL",
+        "london": "LHR",
+        "paris": "CDG",
+        "tokyo": "NRT",
+        "dubai": "DXB",
+        "singapore": "SIN",
+        "bangkok": "BKK",
+        "bali": "DPS",
+        "sydney": "SYD",
+        "amsterdam": "AMS",
+        "rome": "FCO",
+        "barcelona": "BCN"
+    }
+};
+
+// ===========================================
+// GET AIRPORT CODE
+// ===========================================
+function getAirportCode(city) {
+    const lowerCity = city.toLowerCase().trim();
+    
+    // Direct match
+    if (flightDatabase.airports[lowerCity]) {
+        return flightDatabase.airports[lowerCity];
+    }
+    
+    // Partial match
+    for (let [key, code] of Object.entries(flightDatabase.airports)) {
+        if (lowerCity.includes(key) || key.includes(lowerCity)) {
+            return code;
+        }
+    }
+    
+    console.log(`⚠️ No airport code for: ${city}, using default JFK`);
+    return "JFK";
+}
+
+// ===========================================
+// GET FLIGHT INFO - MAIN FUNCTION
+// ===========================================
+function getFlightInfo(origin, destination) {
+    console.log(`🔍 Getting flight info: ${origin} → ${destination}`);
+    
+    const originCode = getAirportCode(origin);
+    const destCode = getAirportCode(destination);
+    
+    console.log(`✈️ Airport codes: ${originCode} → ${destCode}`);
+    
+    const routeKey = `${originCode}-${destCode}`;
+    const reverseKey = `${destCode}-${originCode}`;
+    
+    // Look up route
+    let routeData = flightDatabase.routes[routeKey];
+    
+    // Try reverse route
+    if (!routeData) {
+        routeData = flightDatabase.routes[reverseKey];
+        if (routeData) {
+            console.log(`🔄 Using reverse route: ${reverseKey}`);
+        }
+    }
+    
+    // Return data or default
+    if (routeData) {
+        return {
+            price: routeData.price,
+            airline: routeData.airlines,
+            originCode: originCode,
+            destCode: destCode
+        };
+    }
+    
+    // Default fallback based on distance
+    let defaultPrice = 500;
+    const longHaulDests = ["NRT", "SYD", "LAX", "SFO", "JFK"];
+    const mediumHaulDests = ["DXB", "BKK", "SIN", "DPS"];
+    
+    if (longHaulDests.includes(destCode) || longHaulDests.includes(originCode)) {
+        defaultPrice = 1000;
+    } else if (mediumHaulDests.includes(destCode) || mediumHaulDests.includes(originCode)) {
+        defaultPrice = 600;
+    }
+    
+    return {
+        price: defaultPrice,
+        airline: "Multiple airlines available",
+        originCode: originCode,
+        destCode: destCode
+    };
+}

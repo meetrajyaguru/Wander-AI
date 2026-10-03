@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your AI Generated Trip - TripPlanner AI</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="logo">✈️ TripPlanner AI</div>
+            <div class="nav-links">
+                <span>Welcome, <%= user.name %>!</span>
+                <a href="/dashboard" class="btn-outline">New Trip</a>
+                <a href="/my-trips" class="btn-outline">My Trips</a>
+                <a href="/logout" class="btn-outline">Logout</a>
+            </div>
+        </nav>
+
+        <main class="trip-result">
+            <div class="trip-header">
+                <h1>Your Trip to <%= itinerary.destination %></h1>
+                <div class="trip-meta">
+                    <span class="meta-item">📅 <%= itinerary.dates %></span>
+                    <span class="meta-item">👥 <%= itinerary.people %> people</span>
+                    <span class="meta-item">💰 $<%= itinerary.budget %></span>
+                </div>
+            </div>
+
+            <div class="itinerary">
+                <h2>Your Personalized Itinerary</h2>
+                
+                <% itinerary.dayByDay.forEach(day => { %>
+                    <div class="day-card">
+                        <h3>Day <%= day.day %></h3>
+                        <ul class="activities">
+                            <% day.activities.forEach(activity => { %>
+                                <li><%= activity %></li>
+                            <% }); %>
+                        </ul>
+                    </div>
+                <% }); %>
+            </div>
+
+            <div class="recommendations">
+                <h2>Recommendations</h2>
+                
+                <div class="rec-grid">
+                    <div class="rec-card">
+                        <h4>🏨 Accommodation</h4>
+                        <ul>
+                            <% itinerary.recommendations.accommodation.forEach(item => { %>
+                                <li><%= item %></li>
+                            <% }); %>
+                        </ul>
+                    </div>
+
+                    <div class="rec-card">
+                        <h4>🍽️ Food</h4>
+                        <ul>
+                            <% itinerary.recommendations.restaurants.forEach(item => { %>
+                                <li><%= item %></li>
+                            <% }); %>
+                        </ul>
+                    </div>
+
+                    <div class="rec-card">
+                        <h4>🎯 Activities</h4>
+                        <ul>
+                            <% itinerary.recommendations.activities.forEach(item => { %>
+                                <li><%= item %></li>
+                            <% }); %>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="budget-breakdown">
+                <h2>Estimated Budget Breakdown</h2>
+                <div class="budget-bars">
+                    <div class="budget-item">
+                        <span>Accommodation</span>
+                        <div class="bar-container">
+                            <div class="bar" style="width: 40%"></div>
+                        </div>
+                        <span>$<%= itinerary.estimatedCost.accommodation %></span>
+                    </div>
+                    <div class="budget-item">
+                        <span>Food</span>
+                        <div class="bar-container">
+                            <div class="bar" style="width: 30%"></div>
+                        </div>
+                        <span>$<%= itinerary.estimatedCost.food %></span>
+                    </div>
+                    <div class="budget-item">
+                        <span>Activities</span>
+                        <div class="bar-container">
+                            <div class="bar" style="width: 20%"></div>
+                        </div>
+                        <span>$<%= itinerary.estimatedCost.activities %></span>
+                    </div>
+                    <div class="budget-item">
+                        <span>Transportation</span>
+                        <div class="bar-container">
+                            <div class="bar" style="width: 10%"></div>
+                        </div>
+                        <span>$<%= itinerary.estimatedCost.transportation %></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button onclick="window.print()" class="btn-outline">🖨️ Print/Save</button>
+                <a href="/dashboard" class="btn-primary">✨ Create Another Trip</a>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
